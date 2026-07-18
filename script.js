@@ -51,52 +51,70 @@ const soundText = soundToggle.querySelector(".sound-text");
 const music = document.getElementById("birthdayMusic");
 
 let soundEnabled = true;
+let playbackStarted = false;
+
+function updateToggleUI(enabled) {
+    soundToggle.classList.toggle("muted", !enabled);
+    soundIcon.textContent = enabled ? "🔊" : "🔈";
+    soundText.textContent = enabled ? "Sound On" : "Sound Off";
+}
 
 function startMusicPlayback() {
-    if (!soundEnabled) return;
+    if (!soundEnabled || playbackStarted) return;
 
+    playbackStarted = true;
     music.muted = false;
     music.volume = 1;
     music.currentTime = 0;
 
-    music.play().catch(() => {});
+    const playPromise = music.play();
+
+    if (playPromise && typeof playPromise.then === "function") {
+        playPromise.then(() => {
+            updateToggleUI(true);
+        }).catch(() => {
+            playbackStarted = false;
+        });
+    }
 }
 
 function setSoundState(enabled) {
     soundEnabled = enabled;
-    soundToggle.classList.toggle("muted", !enabled);
-    soundIcon.textContent = enabled ? "🔊" : "🔈";
-    soundText.textContent = enabled ? "Sound On" : "Sound Off";
+    updateToggleUI(enabled);
 
     if (!enabled) {
+        playbackStarted = false;
         music.pause();
         music.currentTime = 0;
         music.muted = true;
     } else {
-        startMusicPlayback();
+        if (music.readyState >= 2) {
+            startMusicPlayback();
+        } else {
+            music.load();
+            music.addEventListener("canplaythrough", startMusicPlayback, { once: true });
+            music.addEventListener("loadeddata", startMusicPlayback, { once: true });
+        }
     }
 }
 
 function startMusicAutomatically() {
     if (!soundEnabled) return;
 
-    music.muted = true;
-    music.volume = 1;
-    music.currentTime = 0;
-
-    music.play().catch(() => {});
-
-    const enableSound = () => {
+    if (music.readyState >= 2) {
         startMusicPlayback();
-    };
-
-    window.addEventListener("pointerdown", enableSound, { once: true });
-    window.addEventListener("keydown", enableSound, { once: true });
-    window.addEventListener("touchstart", enableSound, { once: true });
+    } else {
+        music.load();
+        music.addEventListener("canplaythrough", startMusicPlayback, { once: true });
+        music.addEventListener("loadeddata", startMusicPlayback, { once: true });
+    }
 }
 
 window.addEventListener("load", startMusicAutomatically);
 document.addEventListener("DOMContentLoaded", startMusicAutomatically);
+window.addEventListener("pointerdown", startMusicPlayback, { once: false });
+window.addEventListener("keydown", startMusicPlayback, { once: false });
+window.addEventListener("touchstart", startMusicPlayback, { once: false });
 soundToggle.addEventListener("click", () => {
     setSoundState(!soundEnabled);
 });
