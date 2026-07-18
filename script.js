@@ -52,6 +52,7 @@ const music = document.getElementById("birthdayMusic");
 
 let soundEnabled = true;
 let playbackStarted = false;
+let autoplayRetries = 0;
 
 function updateToggleUI(enabled) {
     soundToggle.classList.toggle("muted", !enabled);
@@ -59,9 +60,8 @@ function updateToggleUI(enabled) {
     soundText.textContent = enabled ? "Sound On" : "Sound Off";
 }
 
-function startMusicPlayback(force = false) {
-    if (!soundEnabled) return;
-    if (playbackStarted && !force) return;
+function startMusicPlayback() {
+    if (!soundEnabled || playbackStarted) return;
 
     playbackStarted = true;
     music.muted = false;
@@ -73,8 +73,13 @@ function startMusicPlayback(force = false) {
     if (playPromise && typeof playPromise.then === "function") {
         playPromise.then(() => {
             updateToggleUI(true);
+            autoplayRetries = 0;
         }).catch(() => {
             playbackStarted = false;
+            if (autoplayRetries < 5) {
+                autoplayRetries += 1;
+                setTimeout(startMusicPlayback, 300 * autoplayRetries);
+            }
         });
     }
 }
@@ -89,33 +94,24 @@ function setSoundState(enabled) {
         music.currentTime = 0;
         music.muted = true;
     } else {
-        if (music.readyState >= 2) {
-            startMusicPlayback();
-        } else {
-            music.load();
-            music.addEventListener("canplaythrough", startMusicPlayback, { once: true });
-            music.addEventListener("loadeddata", startMusicPlayback, { once: true });
-        }
+        startMusicPlayback();
     }
 }
 
 function startMusicAutomatically() {
     if (!soundEnabled) return;
-
     if (music.readyState >= 2) {
         startMusicPlayback();
     } else {
         music.load();
         music.addEventListener("canplaythrough", startMusicPlayback, { once: true });
         music.addEventListener("loadeddata", startMusicPlayback, { once: true });
+        setTimeout(startMusicPlayback, 1000);
     }
 }
 
 window.addEventListener("load", startMusicAutomatically);
 document.addEventListener("DOMContentLoaded", startMusicAutomatically);
-window.addEventListener("pointerdown", () => startMusicPlayback(true), { once: true });
-window.addEventListener("keydown", () => startMusicPlayback(true), { once: true });
-window.addEventListener("touchstart", () => startMusicPlayback(true), { once: true });
 soundToggle.addEventListener("click", () => {
     setSoundState(!soundEnabled);
 });
