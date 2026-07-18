@@ -52,6 +52,16 @@ const music = document.getElementById("birthdayMusic");
 
 let soundEnabled = true;
 
+function startMusicPlayback() {
+    if (!soundEnabled) return;
+
+    music.muted = false;
+    music.volume = 1;
+    music.currentTime = 0;
+
+    music.play().catch(() => {});
+}
+
 function setSoundState(enabled) {
     soundEnabled = enabled;
     soundToggle.classList.toggle("muted", !enabled);
@@ -61,16 +71,28 @@ function setSoundState(enabled) {
     if (!enabled) {
         music.pause();
         music.currentTime = 0;
+        music.muted = true;
     } else {
-        music.currentTime = 0;
-        music.play().catch(() => {});
+        startMusicPlayback();
     }
 }
 
 function startMusicAutomatically() {
-    if (soundEnabled) {
-        setSoundState(true);
-    }
+    if (!soundEnabled) return;
+
+    music.muted = true;
+    music.volume = 1;
+    music.currentTime = 0;
+
+    music.play().catch(() => {});
+
+    const enableSound = () => {
+        startMusicPlayback();
+    };
+
+    window.addEventListener("pointerdown", enableSound, { once: true });
+    window.addEventListener("keydown", enableSound, { once: true });
+    window.addEventListener("touchstart", enableSound, { once: true });
 }
 
 window.addEventListener("load", startMusicAutomatically);
