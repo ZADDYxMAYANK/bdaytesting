@@ -59,8 +59,9 @@ function updateToggleUI(enabled) {
     soundText.textContent = enabled ? "Sound On" : "Sound Off";
 }
 
-function startMusicPlayback() {
-    if (!soundEnabled || playbackStarted) return;
+function startMusicPlayback(force = false) {
+    if (!soundEnabled) return;
+    if (playbackStarted && !force) return;
 
     playbackStarted = true;
     music.muted = false;
@@ -112,9 +113,9 @@ function startMusicAutomatically() {
 
 window.addEventListener("load", startMusicAutomatically);
 document.addEventListener("DOMContentLoaded", startMusicAutomatically);
-window.addEventListener("pointerdown", startMusicPlayback, { once: false });
-window.addEventListener("keydown", startMusicPlayback, { once: false });
-window.addEventListener("touchstart", startMusicPlayback, { once: false });
+window.addEventListener("pointerdown", () => startMusicPlayback(true), { once: true });
+window.addEventListener("keydown", () => startMusicPlayback(true), { once: true });
+window.addEventListener("touchstart", () => startMusicPlayback(true), { once: true });
 soundToggle.addEventListener("click", () => {
     setSoundState(!soundEnabled);
 });
